@@ -11,8 +11,10 @@ import {
   XAxis,
   YAxis
 } from "recharts";
+import type { TooltipProps } from 'recharts';
 import { METRIC_CONFIGS } from "@/lib/metrics-config";
-import type { MetricResponse, YAxisStrategy } from "@/lib/types";
+import { formatMetricValue } from "@/lib/metric-formatting";
+import type { MetricResponse, YAxisStrategy, MetricKey } from "@/lib/types";
 
 type ChartPoint = {
   date: string;
@@ -21,6 +23,31 @@ type ChartPoint = {
   compare: number | null;
   goal: number | null;
 };
+
+/**
+ * Custom tooltip that formats values with appropriate decimal precision
+ */
+function CustomTooltip({ active, payload, metric }: TooltipProps<number, string> & { metric: MetricKey }) {
+  if (!active || !payload || payload.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={{
+      backgroundColor: 'white',
+      padding: '8px 12px',
+      border: '1px solid #ccc',
+      borderRadius: '4px'
+    }}>
+      <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>{payload[0].payload.date}</p>
+      {payload.map((entry, index) => (
+        <p key={index} style={{ margin: '2px 0', fontSize: '13px', color: entry.color }}>
+          {entry.name}: {formatMetricValue(entry.value as number, metric)}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Calculate y-axis domain based on strategy and data points
@@ -82,11 +109,14 @@ export function MetricTrendChart({
 
       <div className="chart-wrap">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ left: 0, right: 20, top: 10, bottom: 0 }}>
+          <LineChart data={points} margin={{ left: 20, right: 20, top: 10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" minTickGap={24} />
-            <YAxis domain={domain} />
-            <Tooltip />
+            <YAxis
+              domain={domain}
+              tickFormatter={(value) => formatMetricValue(value, metric.metric)}
+            />
+            <Tooltip content={<CustomTooltip metric={metric.metric} />} />
             <Legend />
             <Line type="monotone" dataKey="value" name="Daily" stroke="#006d77" dot={false} strokeWidth={2} />
             <Line type="monotone" dataKey="rolling" name="7d Avg" stroke="#e29578" dot={false} strokeWidth={2} />
