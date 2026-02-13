@@ -12,7 +12,7 @@ import {
   YAxis
 } from "recharts";
 import { METRIC_CONFIGS } from "@/lib/metrics-config";
-import type { MetricResponse } from "@/lib/types";
+import type { MetricResponse, YAxisStrategy } from "@/lib/types";
 
 type ChartPoint = {
   date: string;
@@ -21,6 +21,37 @@ type ChartPoint = {
   compare: number | null;
   goal: number | null;
 };
+
+/**
+ * Calculate y-axis domain based on strategy and data points
+ */
+function calculateDomain(
+  strategy: YAxisStrategy,
+  dataPoints: (number | null)[]
+): [number, number | 'auto'] | undefined {
+  const values = dataPoints.filter((v): v is number => v !== null);
+
+  if (values.length === 0) {
+    return undefined;
+  }
+
+  if (strategy === 'from-zero') {
+    return [0, 'auto'];
+  }
+
+  // auto-centered strategy
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+
+  // Handle single value case
+  if (dataMin === dataMax) {
+    const padding = Math.max(dataMin * 0.1, 5);
+    return [dataMin - padding, dataMax + padding];
+  }
+
+  const padding = (dataMax - dataMin) * 0.1;
+  return [dataMin - padding, dataMax + padding];
+}
 
 export function MetricTrendChart({
   metric,
@@ -37,6 +68,11 @@ export function MetricTrendChart({
     goal
   }));
 
+  // Calculate domain based on metric's y-axis strategy
+  const strategy = METRIC_CONFIGS[metric.metric].yAxisStrategy;
+  const allValues = points.flatMap(p => [p.value, p.rolling, p.compare, p.goal]);
+  const domain = calculateDomain(strategy, allValues);
+
   return (
     <article className="panel metric-panel">
       <header className="metric-panel-header">
@@ -49,7 +85,7 @@ export function MetricTrendChart({
           <LineChart data={points} margin={{ left: 0, right: 20, top: 10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" minTickGap={24} />
-            <YAxis />
+            <YAxis domain={domain} />
             <Tooltip />
             <Legend />
             <Line type="monotone" dataKey="value" name="Daily" stroke="#006d77" dot={false} strokeWidth={2} />
