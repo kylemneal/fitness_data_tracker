@@ -7,6 +7,8 @@ export type MetricKey =
 
 export type PeriodPreset = "7d" | "30d" | "90d" | "1y" | "all";
 
+export type YAxisStrategy = "auto-centered" | "from-zero";
+
 export type DailyPoint = {
   date: string;
   value: number | null;
@@ -124,4 +126,5 @@ export type MetricConfig = {
   label: string;
   displayUnit: string;
   aggregate: "sum" | "mean" | "last";
+  yAxisStrategy: YAxisStrategy;
 };
