@@ -1,0 +1,16 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      RAW_EXPORTS_DIR: /app/raw_exports
+      DUCKDB_PATH: /app/.data/fitness_data.duckdb
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - fitness_data_db:/app/.data
+
+volumes:
+  fitness_data_db:
